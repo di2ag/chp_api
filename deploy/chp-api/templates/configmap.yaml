@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: {{ include "chp-api.fullname" . }}-configs
+  labels:
+    {{- include "chp-api.labels" . | nindent 4 }}
+data:
+  {{- (.Files.Glob "configs/*.conf").AsConfig | nindent 2 }}

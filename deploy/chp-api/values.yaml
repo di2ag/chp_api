@@ -1,0 +1,91 @@
+# Default values for chp-api.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: 853771734544.dkr.ecr.us-east-1.amazonaws.com
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "BUILD_VERSION"
+  nginx-tag: "BUILD_VERSION-nginx"
+
+nameOverride: ""
+fullnameOverride: ""
+
+# django applicaiton configuration
+app:
+  debug: "0"
+  secret_key: ""
+  djangoAllowedHosts: "*"
+  djangoSettingsModule: "chp_api.settings.production"
+
+# database connection information
+db: 
+  type: "postgres"
+  engine: "django.db.backends.postgresql"
+  host: ""
+  port: "5432"
+  database: ""
+  username: ""
+  password: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: NodePort
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations: 
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: 100m
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "360"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "360"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "360"
+  hosts:
+    - host: chp-api.ci.transltr.io
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+
+tolerations: 
+  - key: "transltr"
+    value: "chp-api"
+    operator: "Equal"
+    effect: "NoSchedule"
+
+affinity: 
+  # this ensures only ONE pod will run on each node
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - chp-api
+        topologyKey: "kubernetes.io/hostname"
+  # this ensures pod only runs on node with label application=chp-api
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+          - key: application
+            operator: In
+            values:
+            - chp-api

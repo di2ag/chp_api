@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "chp-api.fullname" . }}
+  labels:
+    {{- include "chp-api.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chp-api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "chp-api.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/sh"]
+          args: ["-c", "/bin/bash /home/chp_api/web/entrypoint.prod.sh && gunicorn -c gunicorn.config-prod.py --log-file=- --env DJANGO_SETTINGS_MODULE=chp_api.settings.production chp_api.wsgi:application --bind 0.0.0.0:8000"]
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          volumeMounts:
+            - name: {{ include "chp-api.fullname" . }}-pvc
+              mountPath: /home/chp_api/web/staticfiles
+          env:
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chp-api.fullname" . }}-secret
+                  key: secret_key
+            - name: SQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chp-api.fullname" . }}-secret
+                  key: sql_database
+            - name: SQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chp-api.fullname" . }}-secret
+                  key: sql_username
+            - name: SQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chp-api.fullname" . }}-secret
+                  key: sql_password
+            - name: SQL_ENGINE
+              value: {{ .Values.db.engine }}
+            - name: SQL_HOST
+              value: {{ .Values.db.host }}
+            - name: SQL_PORT
+              value: {{ .Values.db.port }}
+            - name: DATABASE
+              value: {{ .Values.db.type }}
+            - name: DEBUG
+              value: {{ .Values.app.debug }}
+            - name: DJANGO_ALLOWED_HOSTS
+              value: {{ .Values.app.djangoAllowedHosts }}
+            - name: DJANGO_SETTINGS_MODULE
+              value: {{ .Values.app.djangoSettingsModule }}
+        - name: {{ .Chart.Name }}-nginx
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.nginx-tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          volumeMounts:
+            - name: {{ include "chp-api.fullname" . }}-pvc
+              mountPath: /home/chp_api/web/staticfiles
+            - name: config-vol
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: nginx.conf
+      volumes:
+        - name: config-vol
+          configMap:
+            name: {{ include "chp-api.fullname" . }}-configs
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: {{ include "chp-api.fullname" . }}-pvc
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
