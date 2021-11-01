@@ -18,7 +18,7 @@ fullnameOverride: ""
 app:
   debug: "0"
   secret_key: ""
-  djangoAllowedHosts: "*"
+  djangoAllowedHosts: ""
   djangoSettingsModule: "chp_api.settings.production"
 
 # database connection information
@@ -33,16 +33,20 @@ db:
 
 podAnnotations: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
 
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+securityContext: 
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+
+securityContextNginx:
+  runAsUser: 0
+  runAsGroup: 0
+  readOnlyRootFilesystem: true
 
 service:
   type: NodePort
@@ -50,7 +54,6 @@ service:
 
 ingress:
   enabled: true
-  className: nginx
   annotations: 
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/proxy-body-size: 100m
@@ -60,7 +63,7 @@ ingress:
   hosts:
     - host: chp-api.ci.transltr.io
       paths:
-        - path: /*
+        - path: /
           pathType: ImplementationSpecific
 
 tolerations: 

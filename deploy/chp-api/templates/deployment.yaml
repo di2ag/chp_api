@@ -12,6 +12,8 @@ spec:
       {{- include "chp-api.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }} 
       labels:
         {{- include "chp-api.selectorLabels" . | nindent 8 }}
     spec:
@@ -26,20 +28,12 @@ spec:
           command: ["/bin/sh"]
           args: ["-c", "/bin/bash /home/chp_api/web/entrypoint.prod.sh && gunicorn -c gunicorn.config-prod.py --log-file=- --env DJANGO_SETTINGS_MODULE=chp_api.settings.production chp_api.wsgi:application --bind 0.0.0.0:8000"]
           ports:
-            - name: http
+            - name: http-app
               containerPort: 8000
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
           volumeMounts:
             - name: {{ include "chp-api.fullname" . }}-pvc
-              mountPath: /home/chp_api/web/staticfiles
+              mountPath: /home/chp_api/web/chp_api/staticfiles
           env:
             - name: SECRET_KEY
               valueFrom:
@@ -62,34 +56,28 @@ spec:
                   name: {{ include "chp-api.fullname" . }}-secret
                   key: sql_password
             - name: SQL_ENGINE
-              value: {{ .Values.db.engine }}
+              value: "{{ .Values.db.engine }}"
             - name: SQL_HOST
-              value: {{ .Values.db.host }}
+              value: "{{ .Values.db.host }}"
             - name: SQL_PORT
-              value: {{ .Values.db.port }}
+              value: "{{ .Values.db.port }}"
             - name: DATABASE
-              value: {{ .Values.db.type }}
+              value: "{{ .Values.db.type }}"
             - name: DEBUG
-              value: {{ .Values.app.debug }}
+              value: "{{ .Values.app.debug }}"
             - name: DJANGO_ALLOWED_HOSTS
               value: "{{ .Values.app.djangoAllowedHosts }}"
             - name: DJANGO_SETTINGS_MODULE
-              value: {{ .Values.app.djangoSettingsModule }}
+              value: "{{ .Values.app.djangoSettingsModule }}"
         - name: {{ .Chart.Name }}-nginx
+          securityContext:
+            {{- toYaml .Values.securityContextNginx | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.nginxTag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - name: http
+            - name: http-nginx
               containerPort: 80
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
           volumeMounts:
             - name: {{ include "chp-api.fullname" . }}-pvc
               mountPath: /home/chp_api/web/staticfiles
