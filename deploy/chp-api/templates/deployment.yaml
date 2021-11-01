@@ -5,9 +5,8 @@ metadata:
   labels:
     {{- include "chp-api.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
+  serviceName: {{ include "chp-api.fullname" . }}
   replicas: {{ .Values.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "chp-api.selectorLabels" . | nindent 6 }}
@@ -73,12 +72,10 @@ spec:
             - name: DEBUG
               value: {{ .Values.app.debug }}
             - name: DJANGO_ALLOWED_HOSTS
-              value: {{ .Values.app.djangoAllowedHosts }}
+              value: "{{ .Values.app.djangoAllowedHosts }}"
             - name: DJANGO_SETTINGS_MODULE
               value: {{ .Values.app.djangoSettingsModule }}
         - name: {{ .Chart.Name }}-nginx
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.nginxTag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
