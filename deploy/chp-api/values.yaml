@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: 853771734544.dkr.ecr.us-east-1.amazonaws.com
+  repository: 853771734544.dkr.ecr.us-east-1.amazonaws.com/translator-ea-chp-api
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "BUILD_VERSION"

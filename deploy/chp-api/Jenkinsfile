@@ -16,7 +16,7 @@ pipeline {
         pollSCM('H/5 * * * *')
     }
     environment {
-        DOCKER_REPO_NAME = "translator-rtx-chp-api"
+        DOCKER_REPO_NAME = "translator-ea-chp-api"
     }
     stages {
         stage('Build Version'){
@@ -57,12 +57,11 @@ pipeline {
         stage('Deploy to AWS EKS') {
             steps {
               configFileProvider([
-                  configFile(fileId: 'values-ci.yaml', targetLocation: 'deploy/values-ci.yaml')
+                  configFile(fileId: 'values-ci.yaml', targetLocation: 'deploy/values.ncats.yaml')
               ]){
                   withAWS(credentials:'aws-ifx-deploy') 
                   {
                       sh '''
-                      kubectl -n chp delete deployment chp-api
                       aws --region ${AWS_REGION} eks update-kubeconfig --name ${KUBERNETES_CLUSTER_NAME}
                       cd deploy && /bin/bash deploy.sh
                       '''
