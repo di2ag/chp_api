@@ -63,7 +63,7 @@ pipeline {
                   {
                       sh '''
                       aws --region ${AWS_REGION} eks update-kubeconfig --name ${KUBERNETES_CLUSTER_NAME}
-                      cd deploy && /bin/bash deploy.sh
+                      cd deploy/chp-api && /bin/bash deploy.sh
                       '''
                   }
                 }
