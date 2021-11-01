@@ -9,7 +9,7 @@ image:
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "BUILD_VERSION"
-  nginx-tag: "BUILD_VERSION-nginx"
+  nginxTag: "BUILD_VERSION-nginx"
 
 nameOverride: ""
 fullnameOverride: ""
