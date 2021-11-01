@@ -57,7 +57,7 @@ pipeline {
         stage('Deploy to AWS EKS') {
             steps {
               configFileProvider([
-                  configFile(fileId: 'values-ci.yaml', targetLocation: 'deploy/values.ncats.yaml')
+                  configFile(fileId: 'values-ci.yaml', targetLocation: 'deploy/chp-api/values.ncats.yaml')
               ]){
                   withAWS(credentials:'aws-ifx-deploy') 
                   {
