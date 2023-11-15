@@ -1,6 +1,0 @@
-chp_learn @ git+https://github.com/di2ag/chp_learn.git@production
-chp_utils @ git+https://github.com/di2ag/chp_utils.git@production
-trapi_model @ git+https://github.com/di2ag/trapi_model.git@production
-chp_look_up @ git+https://github.com/di2ag/chp_look_up.git@production
-gene-specificity @ git+https://github.com/di2ag/gene-specificity.git@production
-reasoner-validator @ git+https://github.com/di2ag/reasoner-validator.git@production

@@ -1,6 +1,12 @@
+tqdm
 djangorestframework
 psycopg2-binary
+bmt
+reasoner_pydantic
+#reasoner-validator
 django-environ
 django-hosts
 gunicorn
 django
+requests
+requests-cache

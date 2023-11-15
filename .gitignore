@@ -1,6 +1,10 @@
+# env files for development
+.dev-db.env
+.dev.env
+
+# data files for development
+chp.sql
 chp_db_fixture.json.gz
-#deployment-script
-deployment-script
 
 #SSH Keys
 id_rsa*
@@ -134,3 +138,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+/Dockerfile.dev-db

@@ -3,6 +3,7 @@
 # Declare variables to be passed into your templates.
 
 replicaCount: 1
+appname: chp-api
 
 image:
   repository: 853771734544.dkr.ecr.us-east-1.amazonaws.com/translator-ea-chp-api
@@ -10,6 +11,7 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: "BUILD_VERSION"
   nginxTag: "BUILD_VERSION-nginx"
+  staticfsTag: "BUILD_VERSION-staticfs"
 
 nameOverride: ""
 fullnameOverride: ""
@@ -18,8 +20,14 @@ fullnameOverride: ""
 app:
   debug: "0"
   secret_key: ""
+  djangoCSRFTrustedOrigins: ""
   djangoAllowedHosts: ""
-  djangoSettingsModule: "chp_api.settings.production"
+  djangoSettingsModule: "chp_api.settings"
+  djangoSuperuserUsername: "chp_admin"
+  djangoSuperuserPassword: ""
+  djangoSuperuserEmail: "chp_admin@chp.com"
+  staticfsFolder: "/var/www"
+  staticfsDebug: "0"
 
 # database connection information
 db: 
@@ -65,10 +73,10 @@ ingress:
       paths:
         - path: /
           pathType: ImplementationSpecific
-
+     
 tolerations: 
   - key: "transltr"
-    value: "chp-api"
+    value: "managed-app"
     operator: "Equal"
     effect: "NoSchedule"
 
@@ -81,9 +89,9 @@ affinity:
           - key: app
             operator: In
             values:
-            - chp-api
+            - managed-app
         topologyKey: "kubernetes.io/hostname"
-  # this ensures pod only runs on node with label application=chp-api
+  # this ensures pod only runs on node with label application=managed-app
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
       nodeSelectorTerms:
@@ -91,4 +99,4 @@ affinity:
           - key: application
             operator: In
             values:
-            - chp-api
+            - managed-app

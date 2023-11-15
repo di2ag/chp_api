@@ -1,0 +1,125 @@
+version: '3.8'
+
+services:
+
+  nginx-proxy:
+    build: nginx
+    restart: always
+    volumes:
+      - ./nginx/default.conf:/tmp/default.conf
+    environment: 
+      - DJANGO_SERVER_ADDR=chp-api:8000
+      - STATIC_SERVER_ADDR=static-fs:8080
+    ports:
+      - "80:80"
+    depends_on:
+      - chp-api
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:80/health-check || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    command: /app/start.sh
+
+  chp-api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    user: chp_api
+    ports: 
+      - '8000:8000'
+    secrets:
+      - db-password
+      - django-key
+      - allowed-hosts
+      - csrf-trusted-origins
+      - django-superuser-username
+      - django-superuser-email
+      - django-superuser-password
+    environment:
+      - POSTGRES_DB=chpapi
+      - POSTGRES_USER=chpapi_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - DEBUG=1
+        # For Helm testing purposes
+        #- POSTGRES_PASSWORD=31173e51d8f78b56606d06dfb66a1b126630cdf4711bed9427025d8979976f31
+        #- SECRET_KEY=e1743ca40af220389cd1165d213e3d677f2d59c00d7b0f94e7a302c91f95f029
+        #- DJANGO_ALLOWED_HOSTS=localhost,chp.thayer.dartmouth.edu
+      - CSRF_TRUSTED_ORIGINS=http://localhost,https://chp.thayer.dartmouth.edu
+        #- DJANGO_SUPERUSER_USERNAME=chp_admin
+        #- DJANGO_SUPERUSER_EMAIL=chp_admin@chp.com
+        #- DJANGO_SUPERUSER_PASSWORD=e12ff26f070819d9a72e317898148679680e6b3976e464b4102bd6eb18357919
+      - SECRET_KEY_FILE=/run/secrets/django-key
+        #- CSRF_TRUSTED_ORIGINS_FILE=/run/secrets/csrf-trusted-origins
+      - DJANGO_ALLOWED_HOSTS_FILE=/run/secrets/allowed-hosts
+      - DJANGO_SUPERUSER_USERNAME_FILE=/run/secrets/django-superuser-username
+      - DJANGO_SUPERUSER_EMAIL_FILE=/run/secrets/django-superuser-email
+      - DJANGO_SUPERUSER_PASSWORD_FILE=/run/secrets/django-superuser-password
+    depends_on:
+      db:
+        condition: service_healthy
+    depends_on:
+        - static-fs
+    healthcheck:
+        #test: ["CMD-SHELL", "curl --silent --fail localhost:8000/flask-health-check || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - static-files:/home/chp_api/staticfiles
+    command: gunicorn -c gunicorn.config.py -b 0.0.0.0:8000 chp_api.wsgi:application
+    #command: python3 manage.py runserver 0.0.0.0:8000
+  
+  db:
+    image: postgres
+    restart: always
+    secrets:
+      - db-password
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=chpapi
+      - POSTGRES_USER=chpapi_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+        # For Helm testing purposes
+        #- POSTGRES_PASSWORD=31173e51d8f78b56606d06dfb66a1b126630cdf4711bed9427025d8979976f31
+    expose:
+      - 5432
+    healthcheck:
+      test: [ "CMD", "pg_isready -d chpapi -U chpapi_user" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  static-fs:
+      image: halverneus/static-file-server:latest
+      environment:
+          - FOLDER=/var/www
+          - DEBUG=true
+      expose:
+        - 8080
+      volumes:
+          - static-files:/var/www/static
+
+volumes:
+  db-data:
+  static-files:
+
+secrets:
+  allowed-hosts:
+    file: secrets/chp_api/allowed_hosts.txt
+  csrf-trusted-origins:
+    file: secrets/chp_api/csrf_trusted_origins.txt
+  db-password:
+    file: secrets/db/password.txt
+  django-key:
+    file: secrets/chp_api/secret_key.txt
+  django-superuser-username:
+    file: secrets/chp_api/django_superuser_username.txt
+  django-superuser-email:
+    file: secrets/chp_api/django_superuser_email.txt
+  django-superuser-password:
+    file: secrets/chp_api/django_superuser_password.txt

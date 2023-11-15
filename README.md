@@ -24,7 +24,7 @@ We encourage anyone looking for tooling/instructions, to interface with our API,
 
 Our API is in active developement and is currently following [Translator Reasoner API standards 1.2.0](https://github.com/NCATSTranslator/ReasonerAPI)
 
-Our API is currently live at: [chp.thayer.dartmouth.edu](http://chp.thayer.dartmouth.edu/)
+Our API is currently live at: [https://chp-api.transltr.io](https://chp-api.transltr.io)
 
 ## Open Endpoints
 * [query](query.md) : `POST /query/`
@@ -35,8 +35,6 @@ Our API is currently live at: [chp.thayer.dartmouth.edu](http://chp.thayer.dartm
 Our roadmap outlining or KP’s milestones and the progression of those milestones: https://github.com/di2ag/Connections-Hypothesis-Provider-Roadmap
 
 Our NCATS Wiki Page: https://github.com/NCATSTranslator/Translator-All/wiki/Connections-Hypothesis-Provider
-
-Our CHP Client repository: https://github.com/di2ag/chp_client
 
 A repository for our reasoning code: https://github.com/di2ag/chp
 

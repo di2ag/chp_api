@@ -1,0 +1,31 @@
+{
+  "message": {
+    "query_graph": {
+      "edges": {
+        "e0": {
+          "object": "n1",
+          "predicates": [
+            "biolink:expressed_in"
+          ],
+          "subject": "n0"
+        }
+      },
+      "nodes": {
+        "n0": {
+          "categories": [
+            "biolink:Gene",
+            "biolink:Protein"
+          ]
+        },
+        "n1": {
+          "categories": [
+            "biolink:GrossAnatomicalStructure"
+          ],
+          "ids": [
+            "UBERON:0000458"
+          ]
+        }
+      }
+    }
+  }
+}
