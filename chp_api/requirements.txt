@@ -109,7 +109,7 @@ stringcase==1.2.0
 tempora==5.5.1
 tomli==2.0.1
 tornado==6.4
-tqdm==4.66.2
+tqdm==4.66.3
 typeguard==4.2.1
 typing_extensions==4.11.0
 tzdata==2024.1
