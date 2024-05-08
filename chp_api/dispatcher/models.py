@@ -71,7 +71,7 @@ class Singleton(models.Model):
         return obj
 
 class DispatcherSetting(Singleton):
-    trapi_version = models.CharField(max_length=28, default='1.4')
+    trapi_version = models.CharField(max_length=28, default='1.5')
     sri_node_normalizer_baseurl = models.URLField(max_length=128, default='https://nodenormalization-sri.renci.org')
 
     def __str__(self):

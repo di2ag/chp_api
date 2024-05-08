@@ -6,7 +6,9 @@ import pkgutil
 import logging
 
 from typing import Tuple, Union
+from pydantic import parse_obj_as
 from django.db.models import QuerySet
+from reasoner_pydantic.utils import HashableMapping
 from django.core.exceptions import ObjectDoesNotExist
 from reasoner_pydantic import MetaKnowledgeGraph, Message, KnowledgeGraph
 from reasoner_pydantic.kgraph import RetrievalSource, Attribute
@@ -25,7 +27,7 @@ internal_logger = logging.getLogger(__name__)
 APP_PATH = os.path.dirname(os.path.abspath(__file__))
 
 class TrapiInterface:
-    def __init__(self, trapi_version: str = '1.4'):
+    def __init__(self, trapi_version: str = '1.5'):
         self.trapi_version = trapi_version
 
     def get_meta_knowledge_graph(self) -> MetaKnowledgeGraph:
@@ -42,7 +44,7 @@ class TrapiInterface:
     def _get_sources(self):
         source_1 = RetrievalSource(resource_id = "infores:connections-hypothesis",
                                    resource_role="primary_knowledge_source")
-        return {source_1}
+        return [source_1]
 
     def _get_attributes(self, val, algorithm_instance, dataset):
         att_1 = Attribute(
@@ -64,18 +66,14 @@ class TrapiInterface:
                 description=f'{dataset.title}: {dataset.description}',
                 )
         att_4 = Attribute(
-                attribute_type_id = 'primary_knowledge_source',
-                value='infores:connections-hypothesis',
-                value_url='https://github.com/di2ag/gennifer',
-                description='The Connections Hypothesis Provider from NCATS Translator.'
+                attribute_type_id = 'knowledge_level',
+                value='statistical_association'
                 )
-        return {att_1, att_2, att_3, att_4}
+        return [att_1, att_2, att_3, att_4]
 
     def _add_results(
             self,
             message,
-            node_bindings,
-            edge_bindings,
             qg_subject_id, 
             subject_curies, 
             subject_category,
@@ -88,13 +86,15 @@ class TrapiInterface:
             algorithms,
             datasets,
             ):
+        node_binding_group = []
+        edge_binding_group = []
         nodes = dict()
         edges = dict()
         val_id = 0
         for subject_curie in subject_curies:
             for object_curie in object_curies:
-                nodes[subject_curie] = {"categories": [subject_category]}
-                nodes[object_curie] = {"categories": [object_category]}
+                nodes[subject_curie] = {"categories": [subject_category], "attributes" : []}
+                nodes[object_curie] = {"categories": [object_category], "attributes" : []}
                 kg_edge_id = str(uuid.uuid4())
                 edges[kg_edge_id] = {"predicate": predicate,
                                      "subject": subject_curie,
@@ -106,14 +106,19 @@ class TrapiInterface:
                                          datasets[val_id],
                                          )}
                 val_id += 1
-                node_bindings[qg_subject_id].add(NodeBinding(id = subject_curie))
-                node_bindings[qg_object_id].add(NodeBinding(id = object_curie))
-                edge_bindings[qg_edge_id].add(EdgeBinding(id = kg_edge_id))
+                node_bindings = {qg_subject_id: set(), qg_object_id: set()}
+                edge_bindings = {qg_edge_id : set()}
+                node_bindings[qg_subject_id].add(NodeBinding(id = subject_curie, attributes=[]))
+                node_bindings[qg_object_id].add(NodeBinding(id = object_curie, attributes=[]))
+                edge_bindings[qg_edge_id].add(EdgeBinding(id = kg_edge_id, attributes=[]))
+                node_binding_group.append(node_bindings)
+                edge_binding_group.append(edge_bindings)
         kgraph = KnowledgeGraph(nodes=nodes, edges=edges)
         if message.knowledge_graph is not None:
             message.knowledge_graph.update(kgraph)
         else:
             message.knowledge_graph = kgraph
+        return node_binding_group, edge_binding_group
 
     def _extract_qnode_info(self, qnode):
         return qnode.ids, qnode.categories[0]
@@ -127,8 +132,8 @@ class TrapiInterface:
         subject_curies, subject_category = self._extract_qnode_info(message.query_graph.nodes[qg_subject_id])
         object_curies, object_category = self._extract_qnode_info(message.query_graph.nodes[qg_object_id])
         # annotation
-        node_bindings = {qg_subject_id: set(), qg_object_id: set()}
-        edge_bindings = {qg_edge_id : set()}
+        node_bindings = []
+        edge_bindings = []
         #TODO: Should probably offer support to return all results
         if subject_curies is not None and object_curies is not None:
             logger.info('Annotation edges detected')
@@ -156,22 +161,23 @@ class TrapiInterface:
                 vals = [r.edge_weight for r in results]
                 algorithms = [r.study.algorithm_instance for r in results]
                 datasets = [r.study.dataset for r in results]
-                self._add_results(
+                node_binding_group, edge_binding_group = self._add_results(
                         message,
-                        node_bindings,
-                        edge_bindings,
                         qg_subject_id,
                         subject_curies,
                         subject_category,
                         predicate,
                         qg_edge_id,
-                        qg_object_id, 
-                        [curie], 
+                        object_mapping,
+                        qg_object_id,
+                        [curie],
                         object_category,
                         vals,
                         algorithms,
-                        datasets,
+                        datasets
                         )
+                node_bindings.extend(node_binding_group)
+                edge_bindings.extend(edge_binding_group)
         elif subject_curies is not None:
             logger.info('Wildcard detected')
             for curie in subject_curies:
@@ -194,10 +200,8 @@ class TrapiInterface:
                 vals = [r.edge_weight for r in results]
                 algorithms = [r.study.algorithm_instance for r in results]
                 datasets = [r.study.dataset for r in results]
-                self._add_results(
+                node_binding_group, edge_binding_group = self._add_results(
                         message,
-                        node_bindings,
-                        edge_bindings,
                         qg_subject_id,
                         subject_curies,
                         subject_category,
@@ -210,10 +214,15 @@ class TrapiInterface:
                         algorithms,
                         datasets,
                         )
+                node_bindings.extend(node_binding_group)
+                edge_bindings.extend(edge_binding_group)
         else:
             logger.info('No curies detected. Returning no results')
             return message
-        analysis = Analysis(resource_id='infores:connections-hypothesis', edge_bindings=edge_bindings)
-        result = Result(node_bindings=node_bindings, analyses=[analysis])
-        message.results = Results(__root__ = {result})
+        results = Results(__root__ = parse_obj_as(HashableMapping, {}))
+        for node_binding_dict, edge_binding_dict in zip(node_bindings, edge_bindings):
+            analysis = Analysis(resource_id='infores:connections-hypothesis', edge_bindings = edge_binding_dict, attributes=[])
+            result = Result(node_bindings = node_binding_dict, analyses=[analysis])
+            results.add(result)
+        message.results = results
         return message

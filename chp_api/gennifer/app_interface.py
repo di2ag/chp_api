@@ -9,7 +9,7 @@ def get_app_config(message: Union[Message, None]) -> GenniferConfig:
 
 
 def get_trapi_interface(get_app_config: GenniferConfig = get_app_config(None)):
-    return TrapiInterface(trapi_version='1.4')
+    return TrapiInterface(trapi_version='1.5')
 
 
 def get_meta_knowledge_graph() -> MetaKnowledgeGraph:
