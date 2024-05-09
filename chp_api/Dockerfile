@@ -70,3 +70,5 @@ RUN chown -R chp_api:chp_api $APP_HOME \
 
 # change to the app user
 USER chp_api
+
+CMD ["sh", "python manage.py migrate"]
