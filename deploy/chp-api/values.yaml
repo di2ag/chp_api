@@ -76,7 +76,7 @@ ingress:
      
 tolerations: 
   - key: "transltr"
-    value: "managed-app"
+    value: "chp"
     operator: "Equal"
     effect: "NoSchedule"
 
@@ -86,10 +86,10 @@ affinity:
     requiredDuringSchedulingIgnoredDuringExecution:
       - labelSelector:
           matchExpressions:
-          - key: app
+          - key: applicaiton
             operator: In
             values:
-            - managed-app
+            - chp
         topologyKey: "kubernetes.io/hostname"
   # this ensures pod only runs on node with label application=managed-app
   nodeAffinity:
@@ -99,4 +99,4 @@ affinity:
           - key: application
             operator: In
             values:
-            - managed-app
+            - chp
