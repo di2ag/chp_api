@@ -64,6 +64,9 @@ COPY . .
 #COPY ./chp_db_fixture.json.gz $APP_HOME
 #COPY ./gunicorn.config.py $APP_HOME
 
+# set DJANGO_SETTINGS_MODULE environment variable
+ENV DJANGO_SETTINGS_MODULE=chp_api.settings
+
 # chown all the files to the app user
 RUN chown -R chp_api:chp_api $APP_HOME \
     && chmod 700 $APP_HOME/staticfiles
