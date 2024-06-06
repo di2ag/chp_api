@@ -3,7 +3,7 @@
 ###########
 
 # first stage of build to pull repos
-FROM python:3.8 as intermediate
+FROM python:3.9 as intermediate
 
 # set work directory
 WORKDIR /usr/src/chp_api
@@ -25,7 +25,7 @@ RUN cd gene-specificity && python3 setup.py bdist_wheel && cd dist && cp gene_sp
 #########
 
 #pull official base image
-FROM python:3.8
+FROM python:3.9
 
 # add app user
 RUN groupadd chp_api && useradd -ms /bin/bash -g chp_api chp_api

@@ -228,4 +228,4 @@ secrets:
   gurobi_lic:
     file: secrets/gennifer/gurobi.lic
   openai_api_key:
-    file: secrets/gennifer/openai_api_key.txt
+    file: secrets/gennifer/openai_api_key_2.txt
