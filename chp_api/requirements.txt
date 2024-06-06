@@ -108,7 +108,7 @@ sqlparse==0.5.0
 stringcase==1.2.0
 tempora==5.5.1
 tomli==2.0.1
-tornado==6.4
+tornado==6.4.1
 tqdm==4.66.2
 typeguard==4.2.1
 typing_extensions==4.11.0
