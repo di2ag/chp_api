@@ -1,0 +1,229 @@
+version: '3.8'
+
+services:
+
+  nginx-proxy:
+    build: nginx
+    restart: always
+    volumes:
+      - ./nginx/default.conf:/tmp/default.conf
+    environment: 
+      - DJANGO_SERVER_ADDR=api:8000
+      - STATIC_SERVER_ADDR=static-fs:8080
+      - FLOWER_DASHBOARD_ADDR=dashboard:5556
+      - NEXTJS_SERVER_ADDR=frontend:3000
+        #- NEXTJS_SERVER_ADDR=api:8000
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:80/health-check || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    command: /app/start.sh
+
+  api:
+    build: 
+      context: ./chp_api
+      dockerfile: Dockerfile
+    restart: always
+    user: chp_api
+    ports: 
+      - '8000:8000'
+    secrets:
+      - db-password
+      - django-key
+      - allowed-hosts
+      - csrf-trusted-origins
+      - django-superuser-username
+      - django-superuser-email
+      - django-superuser-password
+    environment:
+      - POSTGRES_DB=chpapi
+      - POSTGRES_USER=chpapi_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - DEBUG=0
+        # For Helm testing purposes
+        #- POSTGRES_PASSWORD=31173e51d8f78b56606d06dfb66a1b126630cdf4711bed9427025d8979976f31
+        #- SECRET_KEY=e1743ca40af220389cd1165d213e3d677f2d59c00d7b0f94e7a302c91f95f029
+        #- DJANGO_ALLOWED_HOSTS=localhost,chp.thayer.dartmouth.edu
+      - CSRF_TRUSTED_ORIGINS=http://localhost,https://chp.thayer.dartmouth.edu
+        #- DJANGO_SUPERUSER_USERNAME=chp_admin
+        #- DJANGO_SUPERUSER_EMAIL=chp_admin@chp.com
+        #- DJANGO_SUPERUSER_PASSWORD=e12ff26f070819d9a72e317898148679680e6b3976e464b4102bd6eb18357919
+      - SECRET_KEY_FILE=/run/secrets/django-key
+        #- CSRF_TRUSTED_ORIGINS_FILE=/run/secrets/csrf-trusted-origins
+      - DJANGO_ALLOWED_HOSTS_FILE=/run/secrets/allowed-hosts
+      - DJANGO_SUPERUSER_USERNAME_FILE=/run/secrets/django-superuser-username
+      - DJANGO_SUPERUSER_EMAIL_FILE=/run/secrets/django-superuser-email
+      - DJANGO_SUPERUSER_PASSWORD_FILE=/run/secrets/django-superuser-password
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+        # Uncomment this for production
+        #- DJANGO_SETTINGS_MODULE=mysite.settings.production
+        # Comment this for development
+      - DJANGO_SETTINGS_MODULE=chp_api.settings
+        # For Open Telemetry
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+      - OTEL_TRACES_EXPORTER=jaeger
+      - OTEL_EXPORTER_JAEGER_AGENT_HOST=jaeger-otel-agent.sri
+      - OTEL_EXPORTER_JAEGER_AGENT_PORT=6831
+    depends_on:
+      - static-fs
+      - db
+        #condition: service_healthy
+    healthcheck:
+        #test: ["CMD-SHELL", "curl --silent --fail localhost:8000/flask-health-check || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - static-files:/home/chp_api/staticfiles
+    #command: uwsgi --http :8000 --max-requests=200 --master --pidfile=/tmp/project-master.pid --logto /tmp/mylog.log --module chp_api.wsgi:application
+    #command: opentelemetry-instrument --traces_exporter console --metrics_exporter console uwsgi --http :8000 --max-requests=200 --master --pidfile=/tmp/project-master.pid  --module chp_api.wsgi:application
+    command: opentelemetry-instrument --traces_exporter jaeger --metrics_exporter console uwsgi --http :8000 --max-requests=200 --master --pidfile=/tmp/project-master.pid --module chp_api.wsgi:application
+    #command: gunicorn -c gunicorn.config.py -b 0.0.0.0:8000 chp_api.wsgi:application
+    #command: python3 manage.py runserver 0.0.0.0:8000
+  
+  worker-api:
+    build: 
+        context: ./chp_api
+        dockerfile: Dockerfile
+    restart: always
+    secrets:
+      - db-password
+      - django-key
+      - allowed-hosts
+      - django-superuser-username
+      - django-superuser-email
+      - django-superuser-password
+    environment:
+      - POSTGRES_DB=chpapi
+      - POSTGRES_USER=chpapi_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - DEBUG=0
+        # For Helm testing purposes
+        #- POSTGRES_PASSWORD=31173e51d8f78b56606d06dfb66a1b126630cdf4711bed9427025d8979976f31
+        #- SECRET_KEY=e1743ca40af220389cd1165d213e3d677f2d59c00d7b0f94e7a302c91f95f029
+        #- DJANGO_ALLOWED_HOSTS=localhost,chp.thayer.dartmouth.edu
+      - CSRF_TRUSTED_ORIGINS=http://localhost,https://chp.thayer.dartmouth.edu
+        #- DJANGO_SUPERUSER_USERNAME=chp_admin
+        #- DJANGO_SUPERUSER_EMAIL=chp_admin@chp.com
+        #- DJANGO_SUPERUSER_PASSWORD=e12ff26f070819d9a72e317898148679680e6b3976e464b4102bd6eb18357919
+      - SECRET_KEY_FILE=/run/secrets/django-key
+        #- CSRF_TRUSTED_ORIGINS_FILE=/run/secrets/csrf-trusted-origins
+      - DJANGO_ALLOWED_HOSTS_FILE=/run/secrets/allowed-hosts
+      - DJANGO_SUPERUSER_USERNAME_FILE=/run/secrets/django-superuser-username
+      - DJANGO_SUPERUSER_EMAIL_FILE=/run/secrets/django-superuser-email
+      - DJANGO_SUPERUSER_PASSWORD_FILE=/run/secrets/django-superuser-password
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    command: celery -A chp_api worker -Q chp_api --loglevel=info
+    depends_on:
+        - api
+        - redis
+
+  dashboard:
+    build: 
+        context: ./chp_api
+        dockerfile: Dockerfile
+    restart: always
+    secrets:
+      - db-password
+      - django-key
+      - allowed-hosts
+      - django-superuser-username
+      - django-superuser-email
+      - django-superuser-password
+    environment:
+      - POSTGRES_DB=chpapi
+      - POSTGRES_USER=chpapi_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - DEBUG=0
+        # For Helm testing purposes
+        #- POSTGRES_PASSWORD=31173e51d8f78b56606d06dfb66a1b126630cdf4711bed9427025d8979976f31
+        #- SECRET_KEY=e1743ca40af220389cd1165d213e3d677f2d59c00d7b0f94e7a302c91f95f029
+        #- DJANGO_ALLOWED_HOSTS=localhost,chp.thayer.dartmouth.edu
+      - CSRF_TRUSTED_ORIGINS=http://localhost,https://chp.thayer.dartmouth.edu
+        #- DJANGO_SUPERUSER_USERNAME=chp_admin
+        #- DJANGO_SUPERUSER_EMAIL=chp_admin@chp.com
+        #- DJANGO_SUPERUSER_PASSWORD=e12ff26f070819d9a72e317898148679680e6b3976e464b4102bd6eb18357919
+      - SECRET_KEY_FILE=/run/secrets/django-key
+        #- CSRF_TRUSTED_ORIGINS_FILE=/run/secrets/csrf-trusted-origins
+      - DJANGO_ALLOWED_HOSTS_FILE=/run/secrets/allowed-hosts
+      - DJANGO_SUPERUSER_USERNAME_FILE=/run/secrets/django-superuser-username
+      - DJANGO_SUPERUSER_EMAIL_FILE=/run/secrets/django-superuser-email
+      - DJANGO_SUPERUSER_PASSWORD_FILE=/run/secrets/django-superuser-password
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    command: celery -A chp_api --broker=redis://redis:6379/0 flower --port=5555
+    ports:
+        - 5556:5555
+    depends_on:
+        - api
+        - redis
+        - worker-api
+
+  redis:
+    restart: always
+    image: redis:6-alpine
+  
+  db:
+    image: postgres
+    restart: always
+    secrets:
+      - db-password
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=chpapi
+      - POSTGRES_USER=chpapi_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+        # For Helm testing purposes
+        #- POSTGRES_PASSWORD=31173e51d8f78b56606d06dfb66a1b126630cdf4711bed9427025d8979976f31
+    expose:
+      - 5432
+    healthcheck:
+      test: [ "CMD", "pg_isready -d chpapi -U chpapi_user" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  static-fs:
+      image: halverneus/static-file-server:latest
+      restart: always
+      environment:
+          - FOLDER=/var/www
+          - DEBUG=true
+      expose:
+        - 8080
+      volumes:
+          - static-files:/var/www/static
+  
+volumes:
+  db-data:
+  static-files:
+
+secrets:
+  allowed-hosts:
+    file: secrets/chp_api/allowed_hosts.txt
+  csrf-trusted-origins:
+    file: secrets/chp_api/csrf_trusted_origins.txt
+  db-password:
+    file: secrets/db/password.txt
+  django-key:
+    file: secrets/chp_api/secret_key.txt
+  django-superuser-username:
+    file: secrets/chp_api/django_superuser_username.txt
+  django-superuser-email:
+    file: secrets/chp_api/django_superuser_email.txt
+  django-superuser-password:
+    file: secrets/chp_api/django_superuser_password.txt

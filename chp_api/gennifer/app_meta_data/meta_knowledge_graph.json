@@ -1,0 +1,21 @@
+{
+  "nodes": {
+    "biolink:Gene": {
+      "id_prefixes": [
+        "ENSEMBL"
+      ]
+    }
+  },
+  "edges": [
+    {
+      "subject": "biolink:Gene",
+      "object": "biolink:Gene",
+      "predicate": "biolink:regulates"
+    },
+    {
+      "subject": "biolink:Gene",
+      "object": "biolink:Gene",
+      "predicate": "biolink:regulated_by"
+    }
+  ]
+}

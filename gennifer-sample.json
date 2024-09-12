@@ -1,0 +1,16 @@
+{
+    "name": "GSD Study",
+    "description": "This is a test study with one task.",
+    "tasks": [
+        {
+            "algorithm_name": "pidc",
+            "zenodo_id":"7988181",
+            "hyperparameters": null
+        },
+	{
+	    "algorithm_name": "grisli",
+	    "zenodo_id":"8057216",
+	    "hyperparameters": null
+	}
+    ]
+}

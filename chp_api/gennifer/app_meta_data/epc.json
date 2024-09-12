@@ -1,0 +1,11 @@
+[
+    {
+        "attribute_type_id": "biolink:primary_knowledge_source",
+        "original_attribute_name": null,
+        "value": "infores:connections-hypothesis",
+        "value_type_id": "biolink:InformationResource",
+        "attribute_source": "infores:connections-hypothesis",
+        "value_url": "http://chp.thayer.dartmouth.edu",
+        "description": "The Connections Hypothesis Provider from NCATS Translator."
+    }
+]

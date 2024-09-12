@@ -1,0 +1,5 @@
+#!/bin/bash
+
+docker compose -f compose.chp-api.yaml run -v migrations:/home/migrations \
+    --user root api \
+    bash -c "python3 manage.py makemigrations && cp -r /home/chp_api/web/dispatcher/migrations /home/migrations/dispatcher && cp -r /home/chp_api/web/gennifer/migrations /home/migrations/gennifer && cp -r /home/chp_api/web/users/migrations /home/migrations/users"

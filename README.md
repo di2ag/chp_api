@@ -1,48 +1,99 @@
 # Connections Hypothesis Provider API Documentation
 
-## Description
-Connections Hypothesis Provider (CHP) is a service built by Dartmouth College (PI – Dr. Eugene Santos) and Tufts University (Co-PI – Joseph Gormley) in collaboration with the National Center for Advancing Translational Sciences (NCATS). CHP aims to leverage clinical data along with structured biochemical knowledge to derive a computational representation of pathway structures and molecular components to support human and machine-driven interpretation, enable pathway-based biomarker discovery, and aid in the drug development process.
-In its current version, CHP supports queries relating to genetic, therapeutic, and patient clinical features (e.g. tumor staging) contribution toward patient survival, as computed within the context of our test pilot: a robust breast cancer dataset from The Cancer Genome Atlas (TCGA). We are using this as a proving ground for our system’s basic operations as we work to incorporate structured pathway knowledge from Reactome and pathway analysis methods into the tool. 
-
 ## Introduction
-Our system utilizes the Bayesian Knowledge Base (BKB), which is a directed probabilistic graphical model capable of modeling incomplete, cyclic and heterogenous knowledge. We currently expose a portion of our computational framework as a proving ground to reason over patterns that exist within the TCGA dataset, determine sensitivity of features to the underlying conditional probabilities, and guide hypothesis generation. Querying semantics are of the form P(Target=t | Evidence=e). To this end we’ve explored setting survival time targets specifying mutational profiles and drug treatments as evidence, though this process is generalizable to any TCGA feature type (e.g., tumor staging, gene copy number, age of diagnosis, etc.). 
-However, as we incorporate pathway knowledge from domain-standard resources like Reactome and overlay biochemical pathway traversal logic, we will extend these querying semantics to derive inferences relating to biochemical mechanisms. The short-term benefits of tacking on this difficult task are to provide mechanism-of-action level analysis over cellular behavior and clinical outcomes. The long-term benefits of this work is to characterize three categories of information and discovery critical to pathway science, pathway components, pathway topology, and pathway dynamics.
-Queries are governed by the Translator Reasoner API (TRAPI) which support the Biolink Model ontology. We’ve constructed a TRAPI compliant schema that represents our probabilistic queries and is digestible by our service. Upon receiving TRAPI compliant queries we return a conditional probability pertaining to the query as well as the auditable features our system captured and their overall sensitivity to the conditional probability. These features can be used to guide future exploration of the dataset and be used to lead to novel conclusions over the data. 
+Connections Hypothesis Provider (CHP) is a collaborative service developed by Dartmouth College and Tufts University, in partnership with the National Center for Advancing Translational Sciences (NCATS). CHP's mission is to utilize clinical data and structured biochemical knowledge to create computational representations of pathway structures and molecular components. This effort supports both human and machine-driven analysis, enabling pathway-based biomarker discovery and contributing to the drug development process.
 
-## Terms and Definitions
-The greater NCATS consortium uses a series of terms (that we have adopted) to convey meaning quickly. A link to those terms and their definitions are available here: https://docs.google.com/spreadsheets/d/1C8hKXacxtQC5UzXI4opQs1r4pBJ_5hqgXrZH_raYQ4w/edit#gid=1581951609  
-We extend this list local to our KP (Look, here is an NCATS term right here!) with the following terms: 
-•	Connections Hypothesis Provider – CHP
-•	The Cancer Genome Atlas – TCGA
-•	Bayesian Knowledge Base – BKB
+Currently, CHP serves as a platform for Gene Regulatory Network (GRN) discovery, allowing researchers to upload their own RNASeq data, or work with pre-existing datasets. Users can analyze, refine, and explore novel gene-to-gene regulatory relationships through our core discovery tool, GenNIFER, a web-based portal featuring state-of-the-art GRN inferencing algorithms. Additionally, the platform integrates with the Translator ecosystem, allowing users to contextualize their findings using existing knowledge sources.
 
-## Smart API
-CHP is registered with Smart API: https://smart-api.info/ui/855adaa128ce5aa58a091d99e520d396
+Through its integration with the [Knowledge Collaboratory](https://github.com/MaastrichtU-IDS/knowledge-collaboratory) team, GenNIFER also enables researchers to publish their findings back into the Translator ecosystem, facilitating further collaboration and discovery.
 
-## How To Use
-We encourage anyone looking for tooling/instructions, to interface with our API, to the following repository, CHP Client, https://github.com/di2ag/chp_client. CHP Client is a lightweight Python client that interfaces CHP. It is meant to be an easy-to-use wrapper utility to both run and build TRAPI queries that the CHP web service will understand. 
+This Docker repository contains the necessary build instructions to launch our tooling in support of the CHP API. Specifically, CHP API powers the following:
+* [GenNIFER](https://github.com/di2ag/gennifer): our tool for GRN discovery.
+* [Tissue-Gene Specificity Tool](https://github.com/di2ag/gene-specificity): our tool for assessing a gene’s expression specificity to a tissue.
+  
+For more specifics about either application, see their respective repository READMEs.
 
-Our API is in active developement and is currently following [Translator Reasoner API standards 1.2.0](https://github.com/NCATSTranslator/ReasonerAPI)
+## Interacting with CHP API
+The CHP API provides supporting data as a Knowledge Provider (KP) for the Translator consortium and can be interacted with from our build servers. For a list of knowledge that we support, see our meta knowledge graph. Further details about CHP API can be found in its [SmartAPI](http://smart-api.info/registry?q=412af63e15b73e5a30778aac84ce313f) registration. We also provide examples for how to interact with the individual tools in their own relevant repository.
+### Build servers
+* Production: https://chp-api.transltr.io
+* Testing: https://chp-api.test.transltr.io
+* Staging: https://chp-api.ci.transltr.io
 
-Our API is currently live at: [chp.thayer.dartmouth.edu](http://chp.thayer.dartmouth.edu/)
-
-## Open Endpoints
+### Endpoints
 * [query](query.md) : `POST /query/`
-* [predicates](predicates.md) : `GET /predicates/`
-* [curies](curies.md) : `GET /curies/`
+* [predicates](predicates.md) : `GET /meta_knowledge_graph/`
 
-## Other Notable Links
-Our roadmap outlining or KP’s milestones and the progression of those milestones: https://github.com/di2ag/Connections-Hypothesis-Provider-Roadmap
+### Meta Knowledge Graph
+<details>
+  <summary> Click to view json example</summary>
 
-Our NCATS Wiki Page: https://github.com/NCATSTranslator/Translator-All/wiki/Connections-Hypothesis-Provider
+  ```json
+  {
+    "nodes": {
+      "biolink:Gene": {
+        "id_prefixes": [
+          "ENSEMBL"
+        ],
+        "attributes": null
+      },
+      "biolink:GrossAnatomicalStructure": {
+        "id_prefixes": [
+          "UBERON",
+          "EFO"
+        ],
+        "attributes": null
+      }
+    },
+    "edges": [
+      {
+        "subject": "biolink:Gene",
+        "predicate": "biolink:expressed_in",
+        "object": "biolink:GrossAnatomicalStructure",
+        "qualifiers": null,
+        "attributes": null,
+        "knowledge_types": null,
+        "association": null
+      },
+      {
+        "subject": "biolink:GrossAnatomicalStructure",
+        "predicate": "biolink:expresses",
+        "object": "biolink:Gene",
+        "qualifiers": null,
+        "attributes": null,
+        "knowledge_types": null,
+        "association": null
+      },
+      {
+        "subject": "biolink:Gene",
+        "predicate": "biolink:regulates",
+        "object": "biolink:Gene",
+        "qualifiers": null,
+        "attributes": null,
+        "knowledge_types": null,
+        "association": null
+      },
+      {
+        "subject": "biolink:Gene",
+        "predicate": "biolink:regulated_by",
+        "object": "biolink:Gene",
+        "qualifiers": null,
+        "attributes": null,
+        "knowledge_types": null,
+        "association": null
+      }
+    ]
+}
+```
+</details>
 
-Our CHP Client repository: https://github.com/di2ag/chp_client
+### SmartAPI
+CHP is registered with [SmartAPI](http://smart-api.info/registry?q=412af63e15b73e5a30778aac84ce313f).
 
-A repository for our reasoning code: https://github.com/di2ag/chp
+## Contact for this code
+Gregory Hyde (gregory.m.hyde.th@dartmouth.edu)
 
+## TRAPI and Biolink
+Trapi = 1.5.0
 
-## Contacts
-Dr. Eugene Santos (PI): Eugene.Santos.Jr@dartmouth.edu
-
-Joseph Gormley (Co-PI): jgormley@tuftsmedicalcenter.org
-
+Biolink = 4.2.0

@@ -1,6 +1,0 @@
-djangorestframework
-psycopg2-binary
-django-environ
-django-hosts
-gunicorn
-django

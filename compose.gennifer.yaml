@@ -1,0 +1,231 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+        context: ./gennifer/frontend
+        dockerfile: Dockerfile
+    restart: always
+    ports:
+      - 3000:3000
+    environment:
+        - NEXTAUTH_SECRET=X/NTPIqf088gXiYFi7WF0iH3NRJRPE3nZ0oOkRXf5es=
+        - NEXTAUTH_URL=https://chp.thayer.dartmouth.edu
+        - NEXTAUTH_URL_INTERNAL=http://127.0.0.1:3000
+        - CREDENTIALS_URL=https://chp.thayer.dartmouth.edu/o/token/
+        - GENNIFER_CLIENT_ID=jHM4ETk5wi2WUVPElpMFJtZqwY2oBKHVMmTsY9ry
+        - GENNIFER_CLIENT_SECRET=hY0XfS8YLGMojWuvUOPga4sJpEO9isltF7Xk7wXjyFHwWmxkifRXcPbnmhUM0oVO4Zlz349jbtBePIlaafkWubReqEBCoIcCzaZLa2a9pIlq55yow2TBvMDHnImrXvig
+        - GENNIFER_USER_DETAILS_URL=https://chp.thayer.dartmouth.edu/users/me/
+        - GENNIFER_BASE_URL=https://chp.thayer.dartmouth.edu/gennifer/api/
+        - NEXT_PUBLIC_GENNIFER_BASE_URL=https://chp.thayer.dartmouth.edu/gennifer/api/
+  
+  pidc:
+    build: 
+        context: ./gennifer/pidc
+        dockerfile: Dockerfile
+    restart: always
+    user: gennifer_user
+    ports:
+        - 5004:5000
+    secrets:
+        - gennifer_key
+    environment:
+        - SECRET_KEY_FILE=/run/secrets/gennifer_key
+        - CELERY_BROKER_URL=redis://redis:6379/0
+        - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    command: gunicorn -c gunicorn.config.py -b 0.0.0.0:5000 'pidc:create_app()'
+    #command: flask --app pidc run --debug --host 0.0.0.0
+    depends_on:
+        - redis
+ 
+  worker-pidc:
+    build: 
+        context: ./gennifer/pidc
+        dockerfile: Dockerfile
+    restart: always
+    command: celery --app pidc.tasks.celery worker -Q pidc --loglevel=info
+    environment:
+        - CELERY_BROKER_URL=redis://redis:6379/0
+        - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+        - pidc
+        - redis
+ 
+  grisli:
+    build: 
+        context: ./gennifer/grisli
+        dockerfile: Dockerfile
+    restart: always
+    user: gennifer_user
+    ports:
+        - 5005:5000
+    secrets:
+        - gennifer_key
+    environment:
+        - SECRET_KEY_FILE=/run/secrets/gennifer_key
+        - CELERY_BROKER_URL=redis://redis:6379/0
+        - CELERY_RESULT_BACKEND=redis://redis:6379/0
+        - PYTHONUNBUFFERED=1
+    command: gunicorn -c gunicorn.config.py -b 0.0.0.0:5000 'grisli:create_app()'
+    #command: flask --app grisli run --debug --host 0.0.0.0
+    depends_on:
+        - redis
+
+  worker-grisli:
+    build: 
+        context: ./gennifer/grisli
+        dockerfile: Dockerfile
+    restart: always
+    command: celery --app grisli.tasks.celery worker -Q grisli --loglevel=info
+    environment:
+        - CELERY_BROKER_URL=redis://redis:6379/0
+        - CELERY_RESULT_BACKEND=redis://redis:6379/0
+        - PYTHONUNBUFFERED=1
+    depends_on:
+        - grisli
+        - redis
+
+  genie3:
+    build:
+        context: ./gennifer/genie3
+        dockerfile: Dockerfile
+    restart: always
+    user: gennifer_user
+    ports:
+        - 5006:5000
+    secrets:
+        - gennifer_key
+    environment:
+        - SECRET_KEY_FILE=/run/secrets/gennifer_key
+        - CELERY_BROKER_URL=redis://redis:6379/0
+        - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    command: gunicorn -c gunicorn.config.py -b 0.0.0.0:5000 'genie3:create_app()'
+    #command: flask --app genie3 run --debug --host 0.0.0.0
+    depends_on:
+        - redis
+
+  worker-genie3:
+    build:
+        context: ./gennifer/genie3
+        dockerfile: Dockerfile
+    restart: always
+    command: celery --app genie3.tasks.celery worker -Q genie3 --loglevel=info
+    environment:
+        - CELERY_BROKER_URL=redis://redis:6379/0
+        - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+        - genie3
+        - redis
+
+  grnboost2:
+    build:
+        context: ./gennifer/grnboost2
+        dockerfile: Dockerfile
+    restart: always
+    user: gennifer_user
+    ports:
+        - 5007:5000
+    secrets:
+        - gennifer_key
+    environment:
+        - SECRET_KEY_FILE=/run/secrets/gennifer_key
+        - CELERY_BROKER_URL=redis://redis:6379/0
+        - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    command: gunicorn -c gunicorn.config.py -b 0.0.0.0:5000 'grnboost2:create_app()'
+    #command: flask --app grnboost2 run --debug --host 0.0.0.0
+    depends_on:
+        - redis
+
+  worker-grnboost2:
+    build:
+        context: ./gennifer/grnboost2
+        dockerfile: Dockerfile
+    restart: always
+    command: celery --app grnboost2.tasks.celery worker -Q grnboost2 --loglevel=info
+    environment:
+        - CELERY_BROKER_URL=redis://redis:6379/0
+        - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+        - grnboost2
+        - redis
+
+  bkb-grn:
+    build:
+        context: ./gennifer/bkb-grn
+        dockerfile: Dockerfile
+    restart: always
+    user: gennifer_user
+    ports:
+        - 5008:5000
+    secrets:
+        - gennifer_key
+    environment:
+        - PYTHONUNBUFFERED=1
+        - SECRET_KEY_FILE=/run/secrets/gennifer_key
+        - CELERY_BROKER_URL=redis://redis:6379/0
+        - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    command: gunicorn -c gunicorn.config.py -b 0.0.0.0:5000 'bkb_grn:create_app()'
+    #command: flask --app bkb_grn run --debug --host 0.0.0.0
+    depends_on:
+        - redis
+
+  worker-bkb-grn:
+    build:
+        context: ./gennifer/bkb-grn
+        dockerfile: Dockerfile
+    restart: always
+    secrets:
+        - gurobi_lic
+    command: celery --app bkb_grn.tasks.celery worker -Q bkb_grn --loglevel=info
+    environment:
+        - PYTHONUNBUFFERED=1
+        - CELERY_BROKER_URL=redis://redis:6379/0
+        - CELERY_RESULT_BACKEND=redis://redis:6379/0
+        - GRB_LICENSE_FILE=/run/secrets/gurobi_lic
+    depends_on:
+        - bkb-grn
+        - redis
+  
+  annotator:
+    build:
+        context: ./gennifer/annotator
+        dockerfile: Dockerfile
+    restart: always
+    user: gennifer_user
+    ports:
+        - 5009:5000
+    secrets:
+        - gennifer_key
+        - openai_api_key
+    environment:
+        - SECRET_KEY_FILE=/run/secrets/gennifer_key
+        - CELERY_BROKER_URL=redis://redis:6379/0
+        - CELERY_RESULT_BACKEND=redis://redis:6379/0
+        - OPENAI_API_KEY_FILE=/run/secrets/openai_api_key
+    command: gunicorn -c gunicorn.config.py -b 0.0.0.0:5000 'annotator:create_app()'
+    #command: flask --app annotator run --debug --host 0.0.0.0
+    depends_on:
+        - redis
+
+  worker-annotator:
+    build:
+        context: ./gennifer/annotator
+        dockerfile: Dockerfile
+    command: celery --app annotator.tasks.celery worker -Q annotation --loglevel=info
+    secrets:
+        - openai_api_key
+    environment:
+        - CELERY_BROKER_URL=redis://redis:6379/0
+        - CELERY_RESULT_BACKEND=redis://redis:6379/0
+        - OPENAI_API_KEY_FILE=/run/secrets/openai_api_key
+    depends_on:
+        - annotator
+        - redis
+
+secrets:
+  gennifer_key:
+    file: secrets/gennifer/secret_key.txt
+  gurobi_lic:
+    file: secrets/gennifer/gurobi.lic
+  openai_api_key:
+    file: secrets/gennifer/openai_api_key.txt

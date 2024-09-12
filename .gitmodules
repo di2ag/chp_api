@@ -1,0 +1,3 @@
+[submodule "gennifer"]
+	path = gennifer
+	url = git@github.com:di2ag/gennifer.git

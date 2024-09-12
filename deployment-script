@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Variables
+django_superuser_username='cat secrets/chp_api/django_superuser_username.txt'
+django_superuser_email='cat secrets/chp_api/django_superuser_email.txt'
+
+# Only to be run when building on dev machine
+docker compose -f compose.chp-api.yaml -f compose.gennifer.yaml up -d --build --remove-orphans   
+
+docker compose -f compose.chp-api.yaml run api python3 manage.py migrate
+
+# Create a database superuser
+docker compose -f compose.chp-api.yaml run --user root api python3 manage.py createsuperuser --no-input #--username $django_superuser_username --email $django_superuser_email
+
+# Load apps
+docker compose -f compose.chp-api.yaml run api python3 manage.py runscript load_db_apps
+docker compose -f compose.chp-api.yaml run api python3 manage.py runscript templater
+docker compose -f compose.chp-api.yaml run api python3 manage.py runscript gene_spec_curie_templater
+docker compose -f compose.chp-api.yaml run api python3 manage.py runscript algorithm_loader
+
+docker compose -f compose.chp-api.yaml run --user root api python3 manage.py collectstatic --noinput
+
+echo "Check logs with: docker compose -f compose.chp-api.yaml -f compose.gennifer.yaml logs -f"
