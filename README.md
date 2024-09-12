@@ -90,8 +90,5 @@ The CHP API provides supporting data as a Knowledge Provider (KP) for the Transl
 ### SmartAPI
 CHP is registered with [SmartAPI](http://smart-api.info/registry?q=412af63e15b73e5a30778aac84ce313f).
 
-## Contacts
-Dr. Eugene Santos (PI): Eugene.Santos.Jr@dartmouth.edu
-
-Joseph Gormley (Co-PI): jgormley@tuftsmedicalcenter.org
-
+## Contact for this code
+Gregory Hyde (gregory.m.hyde.th@dartmouth.edu)
