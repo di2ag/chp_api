@@ -92,3 +92,8 @@ CHP is registered with [SmartAPI](http://smart-api.info/registry?q=412af63e15b73
 
 ## Contact for this code
 Gregory Hyde (gregory.m.hyde.th@dartmouth.edu)
+
+## TRAPI and Biolink
+Trapi = 1.5.0
+
+Biolink = 4.2.0
